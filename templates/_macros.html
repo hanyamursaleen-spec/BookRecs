@@ -1,0 +1,18 @@
+{% macro stars(n) %}{{ '★' * n }}{{ '☆' * (5 - n) }}{% endmacro %}
+
+{% macro book_list(items) %}
+<ol class="book-list">
+  {% for it in items %}
+  <li>
+    <div class="book-main">
+      <span class="book-title">{{ it.book.title }}</span>
+      <a class="pill" href="{{ url_for('genre_detail', name=it.book.genre) }}">{{ it.book.genre }}</a>
+    </div>
+    <div class="book-meta">
+      <span class="stars">{{ stars(it.avg | round | int) }}</span>
+      {{ '%.1f' % it.avg }} · {{ it.n }} review{{ '' if it.n == 1 else 's' }}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% endmacro %}

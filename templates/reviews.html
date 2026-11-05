@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stars %}
+{% block title %}Your reviews{% endblock %}
+
+{% block content %}
+<h2>Your reviews</h2>
+{% if reviews %}
+  <ul class="review-list">
+    {% for r in reviews %}
+    <li>
+      <div class="book-main">
+        <span class="book-title">{{ r.book.title }}</span>
+        <a class="pill" href="{{ url_for('genre_detail', name=r.book.genre) }}">{{ r.book.genre }}</a>
+      </div>
+      <div class="stars">{{ stars(r.rating) }}</div>
+      <p>{{ r.text }}</p>
+      <form method="post" action="{{ url_for('delete_review', review_id=r.id) }}"
+            onsubmit="return confirm('Delete this review?');">
+        <button type="submit" class="link-btn">Delete</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="hint">You haven't reviewed anything yet.
+     <a href="{{ url_for('index') }}">Add your first review</a>.</p>
+{% endif %}
+{% endblock %}

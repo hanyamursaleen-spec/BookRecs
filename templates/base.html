@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Home{% endblock %} · BookRecs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="page">
+
+  <!-- Banner: clicking it returns to index.html -->
+  <a class="banner" href="{{ url_for('index') }}" aria-label="BookRecs home"></a>
+
+  <div class="card">
+    {% set ep = request.endpoint %}
+    <nav class="tabs">
+      <a href="{{ url_for('index') }}"      class="{{ 'active' if ep == 'index' }}">Add a review</a>
+      <a href="{{ url_for('top') }}"        class="{{ 'active' if ep == 'top' }}">Top recommendations</a>
+      <a href="{{ url_for('my_reviews') }}" class="{{ 'active' if ep == 'my_reviews' }}">Your reviews</a>
+      <a href="{{ url_for('genre_list') }}" class="{{ 'active' if ep in ('genre_list', 'genre_detail') }}">Genre</a>
+    </nav>
+
+    <div class="layout">
+      <!-- Left: quote box that keeps changing (pure CSS animation) -->
+      <aside class="quote-box" aria-label="Famous quotes">
+        <blockquote>A reader lives a thousand lives before he dies.<cite>George R.R. Martin</cite></blockquote>
+        <blockquote>So many books, so little time.<cite>Frank Zappa</cite></blockquote>
+        <blockquote>Books are a uniquely portable magic.<cite>Stephen King</cite></blockquote>
+        <blockquote>The more that you read, the more things you will know.<cite>Dr. Seuss</cite></blockquote>
+      </aside>
+
+      <!-- Right: each page fills this block -->
+      <section class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            <p class="flash {{ category }}">{{ message }}</p>
+          {% endfor %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </section>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

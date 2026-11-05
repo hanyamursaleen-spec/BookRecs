@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import book_list %}
+{% block title %}{{ selected or 'Genre' }}{% endblock %}
+
+{% block content %}
+<h2>Browse by genre</h2>
+<div class="chips">
+  {% for g in genres %}
+  <a href="{{ url_for('genre_detail', name=g) }}"
+     class="chip {{ 'active' if g == selected }}">{{ g }} ({{ counts.get(g, 0) }})</a>
+  {% endfor %}
+</div>
+
+{% if selected %}
+  <h2>{{ selected }}</h2>
+  {% if items %}
+    {{ book_list(items) }}
+  {% else %}
+    <p class="hint">No {{ selected }} books yet.
+       <a href="{{ url_for('index') }}">Add a review</a> to start this shelf.</p>
+  {% endif %}
+{% else %}
+  <p class="hint">Pick a genre to see its best-rated books.</p>
+{% endif %}
+{% endblock %}

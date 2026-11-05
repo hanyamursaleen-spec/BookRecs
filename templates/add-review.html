@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="add-layout">
+
+  <!-- Quote carousel (pure CSS) -->
+  <div class="quote-box">
+    <p class="quote q1">A room without books is like a body without a soul.</p>
+    <p class="quote q2">Reading is to the mind what exercise is to the body.</p>
+    <p class="quote q3">The reading of all good books is like a conversation with the finest minds of past centuries.</p>
+    <p class="quote q4">Not all readers are leaders, but all leaders are readers.</p>
+  </div>
+
+  <!-- Review form -->
+  <form method="post" class="review-form">
+    <label for="title">Book Name</label>
+    <input type="text" id="title" name="title" required>
+
+    <div class="row">
+      <div>
+        <label for="genre">Genre</label>
+        <select id="genre" name="genre" required>
+          {% for g in genres %}<option>{{ g }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="rating">Rating</label>
+        <select id="rating" name="rating" required>
+          <option value="5">★★★★★ (5)</option>
+          <option value="4">★★★★ (4)</option>
+          <option value="3">★★★ (3)</option>
+          <option value="2">★★ (2)</option>
+          <option value="1">★ (1)</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="review">Review</label>
+    <textarea id="review" name="review" rows="5"></textarea>
+
+    <button type="submit">Submit</button>
+  </form>
+</section>
+{% endblock %}

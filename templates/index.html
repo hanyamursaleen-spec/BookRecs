@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Add a review{% endblock %}
+
+{% block content %}
+<form method="post" action="{{ url_for('index') }}" class="review-form">
+
+  <label for="book_name">Book Name</label>
+  <input type="text" id="book_name" name="book_name" list="titles"
+         maxlength="200" required value="{{ form.get('book_name', '') }}">
+  <datalist id="titles">
+    {% for t in titles %}<option value="{{ t }}">{% endfor %}
+  </datalist>
+
+  <div class="row">
+    <div>
+      <label for="genre">Genre</label>
+      <select id="genre" name="genre" required>
+        <option value="" disabled {{ 'selected' if not form.get('genre') }}>Choose…</option>
+        {% for g in genres %}
+        <option value="{{ g }}" {{ 'selected' if form.get('genre') == g }}>{{ g }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="rating">Rating</label>
+      <select id="rating" name="rating" required>
+        <option value="" disabled {{ 'selected' if not form.get('rating') }}>Choose…</option>
+        {% for n in [5, 4, 3, 2, 1] %}
+        <option value="{{ n }}" {{ 'selected' if form.get('rating') == n|string }}>{{ '★' * n }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <label for="review">Review</label>
+  <textarea id="review" name="review" rows="5" required>{{ form.get('review', '') }}</textarea>
+
+  <div class="actions">
+    <button type="submit" class="btn">Submit</button>
+  </div>
+</form>
+{% endblock %}

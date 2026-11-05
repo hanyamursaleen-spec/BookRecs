@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import book_list %}
+{% block title %}Top recommendations{% endblock %}
+
+{% block content %}
+<h2>Recommended for you</h2>
+{% if recommended %}
+  <p class="hint">Highly rated books in genres you rated 4★ or more:
+     {{ liked_genres | join(', ') }}.</p>
+  {{ book_list(recommended) }}
+{% elif has_reviews %}
+  <p class="hint">No new books to suggest in your favourite genres yet.
+     Check the top list below or <a href="{{ url_for('genre_list') }}">browse genres</a>.</p>
+{% else %}
+  <p class="hint"><a href="{{ url_for('index') }}">Add a review</a> (4★ or higher)
+     and we'll suggest books from the same genres.</p>
+{% endif %}
+
+<h2>Top rated overall</h2>
+{% if overall %}
+  {{ book_list(overall) }}
+{% else %}
+  <p class="hint">No books yet. Be the first to <a href="{{ url_for('index') }}">add a review</a>!</p>
+{% endif %}
+{% endblock %}
