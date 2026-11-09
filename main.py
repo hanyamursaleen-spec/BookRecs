@@ -11,14 +11,8 @@ from sqlalchemy import func
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-change-me")
-
-# Hosted DB in production (DATABASE_URL), SQLite file only as a local fallback
-db_url = os.environ.get("DATABASE_URL", "sqlite:///bookrecs.db")
-if db_url.startswith("postgres://"):          # some hosts still use the old prefix
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
-app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///bookrecs.db"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365)
 
 db = SQLAlchemy(app)
 
