@@ -17,6 +17,16 @@
 
   <div class="card">
     {% set ep = request.endpoint %}
+    <div class="userbar">
+      {% if current_user.is_authenticated %}
+        Signed in as <strong>{{ current_user.username }}</strong>
+        <form method="post" action="{{ url_for('logout') }}">
+          <button type="submit" class="link-btn">Log out</button>
+        </form>
+      {% else %}
+        <a href="{{ url_for('login') }}">Log in</a> · <a href="{{ url_for('register') }}">Sign up</a>
+      {% endif %}
+    </div>
     <nav class="tabs">
       <a href="{{ url_for('index') }}"      class="{{ 'active' if ep == 'index' }}">Add a review</a>
       <a href="{{ url_for('top') }}"        class="{{ 'active' if ep == 'top' }}">Top recommendations</a>

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+
+{% block content %}
+<form method="post" class="review-form">
+  <label for="username">Username</label>
+  <input type="text" id="username" name="username" maxlength="40" required autocomplete="username">
+
+  <label for="email">Email</label>
+  <input type="text" id="email" name="email" maxlength="120" required autocomplete="email">
+
+  <label for="password">Password (min. 8 characters)</label>
+  <input type="password" id="password" name="password" minlength="8" required autocomplete="new-password">
+
+  <div class="actions"><button type="submit" class="btn">Create account</button></div>
+  <p class="hint">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+</form>
+{% endblock %}

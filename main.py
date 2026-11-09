@@ -1,18 +1,35 @@
 import os
-import uuid
 from datetime import datetime, timedelta, timezone
 
 from flask import (Flask, render_template, request, redirect,
-                   url_for, session, flash, abort)
+                   url_for, flash, abort, session)
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import (LoginManager, UserMixin, login_user, logout_user,
+                         login_required, current_user)
+from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import func
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-change-me")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///bookrecs.db"
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365)
+
+# Hosted DB in production (DATABASE_URL), SQLite file only as a local fallback
+db_url = os.environ.get("DATABASE_URL", "sqlite:///bookrecs.db")
+if db_url.startswith("postgres://"):          # some hosts still use the old prefix
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 db = SQLAlchemy(app)
+
+login_manager = LoginManager(app)
+login_manager.login_view = "login"
+login_manager.login_message = "Please log in to continue."
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 
 GENRES = [
     "Fantasy", "Science Fiction", "Mystery", "Thriller", "Romance",
@@ -22,6 +39,11 @@ GENRES = [
 
 # ---------------------------------------------------------------- models
 
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(40), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
 
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,7 +57,8 @@ class Book(db.Model):
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     book_id = db.Column(db.Integer, db.ForeignKey("book.id"), nullable=False)
-    user_token = db.Column(db.String(64), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    user = db.relationship("User", backref="reviews")
     rating = db.Column(db.Integer, nullable=False)          # 1..5
     text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime,
@@ -46,17 +69,6 @@ with app.app_context():
     db.create_all()
 
 # --------------------------------------------------------------- helpers
-
-
-def current_user():
-    """Anonymous identity stored in a cookie, so no login is needed.
-    'Your reviews' and personal recommendations are tied to this token."""
-    if "uid" not in session:
-        session["uid"] = str(uuid.uuid4())
-        session.permanent = True
-    return session["uid"]
-
-
 MIN_VOTES = 2  # how many reviews a book needs before its own average dominates
 
 
@@ -97,9 +109,9 @@ def ranked_books(genre=None, genres=None, exclude_ids=None, limit=None):
 
 
 @app.route("/", methods=["GET", "POST"])
+@login_required
 def index():
     """Add a review (home page)."""
-    uid = current_user()
     form = request.form if request.method == "POST" else {}
 
     if request.method == "POST":
@@ -119,14 +131,13 @@ def index():
             if book is None:
                 book = Book(title=title, title_key=key, genre=genre)
                 db.session.add(book)
-                db.session.flush()          # get book.id before commit
+                db.session.flush()
 
-            # one review per person per book: update if it already exists
-            review = Review.query.filter_by(book_id=book.id, user_token=uid).first()
+            review = Review.query.filter_by(book_id=book.id, user_id=current_user.id).first()
             if review:
                 review.rating, review.text = rating, text
             else:
-                db.session.add(Review(book_id=book.id, user_token=uid,
+                db.session.add(Review(book_id=book.id, user_id=current_user.id,
                                       rating=rating, text=text))
             db.session.commit()
             flash("Thanks! Your review has been saved.", "ok")
@@ -138,9 +149,9 @@ def index():
 
 @app.route("/top")
 def top():
-    """Top recommendations: personalised picks + overall top list."""
-    uid = current_user()
-    mine = Review.query.filter_by(user_token=uid).all()
+    """Top recommendations (public; personalised when logged in)."""
+    mine = (Review.query.filter_by(user_id=current_user.id).all()
+            if current_user.is_authenticated else [])
     reviewed_ids = [r.book_id for r in mine]
     liked_genres = sorted({r.book.genre for r in mine if r.rating >= 4})
 
@@ -157,12 +168,23 @@ def top():
 
 
 @app.route("/my-reviews")
+@login_required
 def my_reviews():
-    """Your reviews."""
-    reviews = (Review.query.filter_by(user_token=current_user())
+    reviews = (Review.query.filter_by(user_id=current_user.id)
                .order_by(Review.created_at.desc()).all())
     return render_template("reviews.html", reviews=reviews)
 
+
+@app.post("/review/<int:review_id>/delete")
+@login_required
+def delete_review(review_id):
+    review = db.get_or_404(Review, review_id)
+    if review.user_id != current_user.id:
+        abort(403)
+    db.session.delete(review)
+    db.session.commit()
+    flash("Review deleted.", "ok")
+    return redirect(url_for("my_reviews"))
 
 @app.post("/review/<int:review_id>/delete")
 def delete_review(review_id):
@@ -198,6 +220,17 @@ def genre_detail(name):
 # Optional: `flask --app main seed` fills the DB so you can see recommendations
 @app.cli.command("seed")
 def seed():
+    db.create_all()
+    users = []
+    for i in range(3):
+        u = User.query.filter_by(username=f"seed{i}").first()
+        if not u:
+            u = User(username=f"seed{i}", email=f"seed{i}@example.com",
+                     password_hash=generate_password_hash("not-a-real-password"))
+            db.session.add(u)
+        users.append(u)
+    db.session.flush()
+
     data = [
         ("Dune", "Science Fiction", [5, 5, 4]),
         ("Project Hail Mary", "Science Fiction", [5, 5]),
@@ -214,11 +247,58 @@ def seed():
         db.session.add(book)
         db.session.flush()
         for i, r in enumerate(ratings):
-            db.session.add(Review(book_id=book.id, user_token=f"seed-{i}",
+            db.session.add(Review(book_id=book.id, user_id=users[i].id,
                                   rating=r, text="Seeded review."))
     db.session.commit()
     print("Seeded.")
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not username or not email or len(password) < 8:
+            flash("Enter a username, email and a password of at least 8 characters.", "error")
+        elif User.query.filter((User.username == username) | (User.email == email)).first():
+            flash("That username or email is already registered.", "error")
+        else:
+            user = User(username=username, email=email,
+                        password_hash=generate_password_hash(password))
+            db.session.add(user)
+            db.session.commit()
+            login_user(user, remember=True)
+            return redirect(url_for("index"))
+    return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user, remember=True)
+            nxt = request.args.get("next", "")
+            if nxt.startswith("/") and not nxt.startswith("//"):   # only local redirects
+                return redirect(nxt)
+            return redirect(url_for("index"))
+        flash("Incorrect email or password.", "error")
+    return render_template("login.html")
+
+
+@app.post("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("You've been logged out.", "ok")
+    return redirect(url_for("login"))
 
 if __name__ == "__main__":
     app.run(debug=True)

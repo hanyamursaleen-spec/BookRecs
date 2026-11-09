@@ -151,3 +151,13 @@ a { color: var(--brown); }
   .tabs { flex-wrap: wrap; gap: 10px 18px; }
   .row { grid-template-columns: 1fr; gap: 0; }
 }
+
+.userbar {
+  display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+  padding: 18px 40px 0; font-size: .9rem;
+}
+.userbar form { margin: 0; }
+.review-form input[type="password"] {
+  width: 100%; border: 1.5px solid #000; border-radius: 22px;
+  padding: 10px 18px; font: inherit; background: #fff; margin-bottom: 18px;
+}

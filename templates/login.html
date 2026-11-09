@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<form method="post" class="review-form">
+  <label for="email">Email</label>
+  <input type="text" id="email" name="email" required autocomplete="email">
+
+  <label for="password">Password</label>
+  <input type="password" id="password" name="password" required autocomplete="current-password">
+
+  <div class="actions"><button type="submit" class="btn">Log in</button></div>
+  <p class="hint">New here? <a href="{{ url_for('register') }}">Create an account</a></p>
+</form>
+{% endblock %}
