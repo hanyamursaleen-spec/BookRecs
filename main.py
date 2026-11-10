@@ -180,17 +180,6 @@ def delete_review(review_id):
     flash("Review deleted.", "ok")
     return redirect(url_for("my_reviews"))
 
-@app.post("/review/<int:review_id>/delete")
-def delete_review(review_id):
-    review = db.get_or_404(Review, review_id)
-    if review.user_token != current_user():
-        abort(403)
-    db.session.delete(review)
-    db.session.commit()
-    flash("Review deleted.", "ok")
-    return redirect(url_for("my_reviews"))
-
-
 @app.route("/genre")
 def genre_list():
     """Genre tab: list of genres."""
