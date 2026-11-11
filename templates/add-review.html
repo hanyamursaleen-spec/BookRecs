@@ -24,13 +24,10 @@
       </div>
       <div>
         <label for="rating">Rating</label>
-        <select id="rating" name="rating" required>
-          <option value="5">★★★★★ (5)</option>
-          <option value="4">★★★★ (4)</option>
-          <option value="3">★★★ (3)</option>
-          <option value="2">★★ (2)</option>
-          <option value="1">★ (1)</option>
-        </select>
+        <label for="rating">Rating: <output id="rating-value">3</output>/5</label>
+        <input type="range" id="rating" name="rating"
+        min="1" max="5" step="1" value="3" required
+        oninput="document.getElementById('rating-value').value = this.value">
       </div>
     </div>
 
