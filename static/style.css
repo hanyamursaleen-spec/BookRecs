@@ -91,7 +91,12 @@ body {
 /* ---------- form (matches the rounded inputs in the picture) ---------- */
 .review-form label { display: block; margin: 0 0 6px 10px; font-size: 1.05rem; }
 .review-form input[type="text"],
-.review-form select,
+.review-form input[type="range"] {
+  width: 100%;
+  margin-bottom: 18px;
+  accent-color: var(--brown);
+  cursor: pointer;
+}
 .review-form textarea {
   width: 100%;
   border: 1.5px solid #000;
